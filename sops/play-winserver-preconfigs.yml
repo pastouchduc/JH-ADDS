@@ -1,0 +1,41 @@
+---
+- name: Pre-Configuration of Windows Server Core (setup for Ansible control)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: 1. Enable PowerShell remoting (creates WinRM listener Port 5985 + firewall rules)
+      ansible.builtin.debug:
+        msg:
+          - Run in Powershell as admin: Enable-PSRemoting -Force
+
+    - name: 2. Auto-start WinRM Service (starts on boot automatically)
+      ansible.builtin.debug:
+        msg:
+          - Run in Powershell as admin: Set-Service WinRM -StartupType Automatic
+
+    - name: 3. Quick config listener (verifies/creates HTTP listener, no prompts)
+      ansible.builtin.debug:
+        msg:
+          - Run in Powershell as admin: winrm quickconfig -quiet
+
+    - name: 4. Increase Shell memory limit (sets to 1GB for Ansible)
+      ansible.builtin.debug:
+        msg:
+          - Run in Powershell as admin: winrm set winrm/config/winrs '@{MaxMemoryPerShellMB=\"1024\"}'
+
+    - name: 5. Trust all clients (required for workgroup NTLM)
+      ansible.builtin.debug:
+        msg:
+          - Run in Powershell as admin: Set-Item WSMan:\\localhost\\Client\\TrustedHosts -Value '*' -Force
+
+    - name: 6. Apply all changes to listener
+      ansible.builtin.debug:
+        msg:
+          - Run in Powershell as admin: Restart-Service WinRM
+
+    - name: 7. Confirm WinRM responds (Ansible-ready signal)
+      ansible.builtin.debug:
+        msg:
+          - Run in Powershell as admin: Test-WSMan localhost

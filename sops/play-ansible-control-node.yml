@@ -1,0 +1,67 @@
+---
+- name: Pre-Configuration of Ubuntu Ansible Control Node
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: 1. Update package lists and upgrade system
+      ansible.builtin.debug:
+        msg:
+          - Run: sudo apt update && sudo apt upgrade -y
+          - Then reboot if kernel updated: sudo reboot
+
+    - name: 2. Install software-properties-common for PPAs
+      ansible.builtin.debug:
+        msg:
+          - Run: sudo apt install software-properties-common -y
+
+    - name: 3. Add official Ansible PPA
+      ansible.builtin.debug:
+        msg:
+          - Run: sudo add-apt-repository --yes --update ppa:ansible/ansible
+
+    - name: 4. Install Ansible core
+      ansible.builtin.debug:
+        msg:
+          - Run: sudo apt update
+          - Run: sudo apt install ansible -y
+          - Verify: ansible --version
+
+    - name: 5. Install Python pip for PyWinRM
+      ansible.builtin.debug:
+        msg:
+          - Run: sudo apt install python3-pip -y
+
+    - name: 6. Install pywinrm for Windows connectivity
+      ansible.builtin.debug:
+        msg:
+          - Run: pip3 install pywinrm
+
+    - name: 7. Create sample inventory for Windows
+      ansible.builtin.debug:
+        msg:
+          - Create inventory.ini:
+          - |
+          [winservers]
+          <WIN_SERVER_IP> ansible_connection=winrm ansible_port=5985
+
+          [winservers:vars]
+          ansible_winrm_transport=ntlm
+          ansible_winrm_server_cert_validation=ignore
+          ansible_user=<Admin-Username>
+          ansible_password=<Admin-Password>  # Use ansible-vault encrypt_string
+        tags: inventory
+
+    - name: 8. Run ping test to ensure Ansible connectivity
+      ansible.builtin.debug:
+        msg: |
+          # Save as test_win_ping.yml then run: ansible-playbook test_win_ping.yml -i inventory
+          ---
+          - name: Ping test for Windows servers
+            hosts: winservers
+            gather_facts: false
+            tasks:
+              - name: Ping Windows
+                ansible.windows.win_ping:
+        tags: test
