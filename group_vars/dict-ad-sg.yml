@@ -1,0 +1,100 @@
+---
+T0securitygroups:
+  T0-AuthPolicy-Users:
+    name: T0 Authentication Policy for Users
+    description: Tier 0 users for Authentication Policy Silos. Restricts logon to Tier 0 hosts/protocols. # Use in AuthN Policy creation (Windows Server 2012+)
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-AuthPolicy-Computers:
+    name: T0 Authentication Policy for Computers
+    description: Tier 0 computers (DCs/PAWs) for Authentication Policy Silos. Clean-source enforcement. # Use in AuthN Policy Silo for device restrictions.
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-JIT-Escalation:
+    name: T0 Just-In-Time Escalation permissions
+    description: Tier 0 just-in-time elevation target. Temporary membership for approved escalations. # Script/manual process to add/remove members time-bound.
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-DA-Admins:
+    name: T0 Domain Admins
+    description: Tier 0 delegated Domain Administrators. Members perform forest/domain-wide AD changes (GPO, schema). Restricted to Tier 0 PAWs. # Nest into built-in Domain Admins group
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-BU-Admins:
+    name: T0 Backup Operators
+    description: Tier 0 Backup Operators for DC/critical data backups. No other rights. Restricted to Tier 0 systems. # Nest into built-in Backup Operators group
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-DC-Admins:
+    name: T0 Domain Controller
+    description: Tier 0 local admins for Domain Controllers only. DC maintenance (patches, services). No domain-wide rights. # Nest into DC-local Administrators via Restricted Groups GPO on T0Servers OU
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-PAW-Admin:
+    name: T0 Privileged Access Workstations
+    description: Tier 0 admins authorized for logon to PAWs/Workstations. Admin tools only. No server/DC access. # Apply via Logon Rights GPO on T0Workstations (allow only these members)
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-Hypervisor-Admins:
+    name: T0 Hypervisor Administrators
+    description: Tier 0 admins for Hyper-V/VMware hosts running Tier 0 VMs. Host management only. # Nest into host-local Administrators via GPO on hypervisor servers
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-ADCS-Admins:
+    name: T0 Active Directory Certificate Authority Administrators
+    description: Tier 0 PKI/Certificate Authority admins. CA management/issuance only. # Nest into Enterprise Admins (if multi-domain) or CA ACLs
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+  T0-Service-Admins:
+    name: T0 Service Administrators
+    description: Tier 0 admins for managing service accounts/gMSAs. Scoped to specific Tier 0 services. # Delegate via ACLs on service account OUs; no broad rights
+    scope: global
+    path: OU=T0Groups,OU=Tier0
+    state: present
+T1securitygroups:
+  T1-Server-Admins:
+    name: T1 Server Administrators
+    description: Tier 1 local admins for enterprise servers only. Server maintenance. No Tier 0/2 access. # Nest into local Administrators on T1Servers via Restricted Groups GPO
+    scope: global
+    path: OU=T1Groups,OU=Tier1
+    state: present
+  T1-SQL-Admins:
+    name: T1 SQL Administrators
+    description: Tier 1 SQL Server database admins. db_owner on Tier 1 instances only. # Nest into T1-Server-Admins + SQL-specific ACLs/GPOs.
+    scope: global
+    path: OU=T1Groups,OU=Tier1
+    state: present
+  T1-Backup-Operators:
+    name: T1 Backup Operators
+    description: Tier 1 backups for servers/apps. No admin rights. # Nest into local Backup Operators on T1Servers
+    scope: global
+    path: OU=T1Groups,OU=Tier1
+    state: present
+T2securitygroups:
+  T2-User-Admins:
+    name: T2 User Administrators
+    description: Tier 2 helpdesk for user account management (resets, unlocks). No server/workstation admin. # Delegate AD permissions via ADUC Delegation Wizard on T2Users OU.
+    path: OU=T2Groups,OU=Tier2
+    scope: global
+    state: present
+  T2-Workstation-Admins:
+    name: T2 Workstation Administrators
+    description: Tier 2 local admins for workstations only. Endpoint support. No Tier 0/1 access. # Nest into local Administrators on T2Workstations via GPO
+    scope: global
+    path: OU=T2Groups,OU=Tier2
+    state: present
+  T2-Printer-Admins:
+    name: T2 Printer Administrators
+    description: Tier 2 admins for printer management/installation. Print server only. # Delegate via Print Management console + GPO on T2Printers.
+    scope: global
+    path: OU=T2Groups,OU=Tier2
+    state: present

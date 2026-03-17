@@ -1,0 +1,42 @@
+---
+- name: Install ADDS + Promote First DC/Forest
+  hosts: domaincontrollers
+  gather_facts: false
+  vars:
+    addsinfo:
+      domain_fqdn: "hlab.local"
+      domain_netbios: "HLAB"
+      safe_mode_password: "Emeraude1#"
+      dsrm_password: "Emeraude1#"
+  tasks:
+    - name: Install ADDS and DNS roles
+      win_feature:
+        name:
+          - AD-Domain-Services
+          - DNS
+        state: present
+      register: adds_install
+
+    - name: Reboot for ADDS
+      win_reboot:
+      when: adds_install.reboot_required
+
+    - name: Promote to first DC + new forest
+      microsoft.ad.domain:
+        dns_domain_name: "{{ addsinfo.domain_fqdn }}"
+        domain_netbios_name: "{{ addsinfo.domain_netbios }}"
+        domain_mode: "WinThreshold"
+        forest_mode: "WinThreshold"
+        safe_mode_password: "{{ addsinfo.safe_mode_password }}"
+        install_dns: yes
+        reboot: yes
+        reboot_timeout: 600
+      register: dc_promo
+
+    - name: Validate domain
+      win_shell: |
+        Import-Module ActiveDirectory
+        Get-ADDomain | Select-Object Name, Forest, DomainControllers
+        nltest /dsgetdc:hlab.local
+      register: ad_validate
+      changed_when: false

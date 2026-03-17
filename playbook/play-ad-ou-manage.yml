@@ -1,0 +1,61 @@
+---
+- name: Manage AD OU Objects
+  hosts: domaincontrollers
+  gather_facts: false
+
+  vars:
+    domain1: hlab
+    domain2: local
+
+  tasks:
+    - name: Ensure root-level OUs are present with specific properties
+      microsoft.ad.ou:
+        name: "{{ item.value.name }}"
+        path: "DC={{ domain1 }},DC={{ domain2 }}"
+        protect_from_deletion: "{{ item.value.protect_from_deletion }}"
+        description: "{{ item.value.description }}"
+        state: "{{ item.value.state }}"
+        managed_by: "{{ item.value.managed_by | default(omit) }}"
+      with_dict: "{{ rootorganizationalunits }}"
+
+    - name: Ensure T0-level OUs are present with specific properties
+      microsoft.ad.ou:
+        name: "{{ item.value.name }}"
+        path: "OU=Tier0,DC={{ domain1 }},DC={{ domain2 }}"
+        protect_from_deletion: "{{ item.value.protect_from_deletion }}"
+        description: "{{ item.value.description }}"
+        state: "{{ item.value.state }}"
+        managed_by: "{{ item.value.managed_by | default(omit) }}"
+      with_dict: "{{ tier0organizationalunits }}"
+
+    - name: Ensure T1-level OUs are present with specific properties
+      microsoft.ad.ou:
+        name: "{{ item.value.name }}"
+        path: "OU=Tier1,DC={{ domain1 }},DC={{ domain2 }}"
+        protect_from_deletion: "{{ item.value.protect_from_deletion }}"
+        description: "{{ item.value.description }}"
+        state: "{{ item.value.state }}"
+        managed_by: "{{ item.value.managed_by | default(omit) }}"
+      with_dict: "{{ tier1organizationalunits }}"
+
+    - name: Ensure T2-level OUs are present with specific properties
+      microsoft.ad.ou:
+        name: "{{ item.value.name }}"
+        path: "OU=Tier2,DC={{ domain1 }},DC={{ domain2 }}"
+        protect_from_deletion: "{{ item.value.protect_from_deletion }}"
+        description: "{{ item.value.description }}"
+        state: "{{ item.value.state }}"
+        managed_by: "{{ item.value.managed_by | default(omit) }}"
+      with_dict: "{{ tier2organizationalunits }}"
+
+    # - name: Gather all organizational units (OUs)
+    #   microsoft.ad.object_info:
+    #     filter: "ObjectClass -eq 'organizationalUnit'"
+    #     search_base: "DC=epsilon-inc,DC=dev"           # The base DN to start the search
+    #     search_scope: "subtree"                   # Search the base and all children recursively
+    #     properties: "*"
+    #   register: ou_results
+
+    # - name: Display the list of OUs
+    #   ansible.builtin.debug:
+    #     var: ou_results.objects

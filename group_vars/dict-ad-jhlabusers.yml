@@ -1,0 +1,37 @@
+---
+LocalAdmins:
+  jameshonapoly:
+    identity: 
+    firstname: James
+    surname: Honapoly
+    password: L@kindr11@#
+    state: present
+    path: CN=Users
+  immanuelsamuel:
+    identity: 
+    firstname: Immanuel
+    surname: Samuel
+    password: L@kindr11@#
+    state: present
+    path: CN=Users
+  bernicejayne:
+    identity:
+    firstname: Bernice
+    surname: Jayne
+    password: L@kindr11@#
+    state: present
+    path: CN=Users
+  jakeevans:
+    identity:
+    firstname: Jake
+    surname: Evans
+    password: L@kindr11@#
+    state: present
+    path: CN=Users
+  jeffreycaleb:
+    identity:
+    firstname: Jeffrey
+    surname: Caleb
+    password: L@kindr11@#
+    state: present
+    path: CN=Users

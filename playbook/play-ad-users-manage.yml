@@ -1,0 +1,32 @@
+---
+- name: Manage Active Directory Users
+  hosts: domaincontrollers
+  gather_facts: false
+
+  vars:
+    domain1: hlab
+    domain2: local
+
+  tasks:
+    - name: Ensure local users are present
+      microsoft.ad.user:
+        identity: "{{ item.value.firstname[0] | lower }}{{ item.value.surname | lower }}.da"
+        firstname: "{{ item.value.firstname }}"
+        surname: "{{ item.value.surname }}"
+        password: "{{ item.value.password }}"
+        state: "{{ item.value.state }}"
+        path: "{{ item.value.path }},DC={{ domain1 }},DC={{ domain2 }}"
+      with_dict: "{{ LocalAdmins }}"
+
+
+
+    # - name: Ensure user bob is present in OU ou=test,dc=domain,dc=local
+    #   microsoft.ad.user:
+    #     identity: bob
+    #     password: B0bP4ssw0rd
+    #     state: absent
+    #     path: CN=Users,DC=epsilon-inc,DC=dev
+        # groups:
+        #   set:
+        #     - Domain Admins
+        #     - Domain Users

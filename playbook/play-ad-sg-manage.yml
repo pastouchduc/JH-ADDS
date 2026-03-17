@@ -1,0 +1,43 @@
+---
+- name: Manage AD Security Group Objects
+  hosts: domaincontrollers
+  gather_facts: false
+  
+  vars:
+    domain1: hlab
+    domain2: local
+
+  tasks:
+    - name: Ensure T0 Security Groups are present with specific properties
+      microsoft.ad.group:
+        name: "{{ item.value.name }}"
+        description: "{{ item.value.description }}"
+        scope: "{{ item.value.scope }}"
+        path: "{{ item.value.path }},DC={{ domain1 }},DC={{ domain2 }}"
+        state: "{{ item.value.state }}"
+        group:
+          - name: 
+      with_dict: "{{ T0securitygroups }}"
+
+    - name: Ensure T1 Security Groups are present with specific properties
+      microsoft.ad.group:
+        name: "{{ item.value.name }}"
+        description: "{{ item.value.description }}"
+        scope: "{{ item.value.scope }}"
+        path: "{{ item.value.path }},DC={{ domain1 }},DC={{ domain2 }}"
+        state: "{{ item.value.state }}"
+      with_dict: "{{ T1securitygroups }}"
+
+    - name: Ensure T2 Security Groups are present with specific properties
+      microsoft.ad.group:
+        name: "{{ item.value.name }}"
+        description: "{{ item.value.description }}"
+        scope: "{{ item.value.scope }}"
+        path: "{{ item.value.path }},DC={{ domain1 }},DC={{ domain2 }}"
+        state: "{{ item.value.state }}"
+      with_dict: "{{ T2securitygroups }}"
+
+    # - name: Ensure T2 Security Groups are present with specific properties
+    #   microsoft.ad.group:
+    #     name: "{{  }}"
+    

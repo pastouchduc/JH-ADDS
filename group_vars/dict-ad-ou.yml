@@ -1,0 +1,110 @@
+---
+rootorganizationalunits:
+  domaincontrollers:
+    name: Domain Controllers
+    protect_from_deletion: true
+    managed_by: "Domain Admins"
+    description: "Default container for domain controllers"
+    state: present
+  tier0:
+    name: Tier0
+    protect_from_deletion: false
+    managed_by: "Domain Admins"
+    description: "Default container for Tier 0"
+    state: present
+  tier1:
+    name: Tier1
+    protect_from_deletion: false
+    description: "Default container for Tier 1"
+    state: present
+  tier2:
+    name: Tier2
+    protect_from_deletion: false
+    description: "Default container for Tier 2"
+    state: present
+tier0organizationalunits:
+  T0Admins:
+    name: T0Admins
+    protect_from_deletion: false
+    description: "Default container for T0 Admin Accounts"
+    state: present
+  T0Groups:
+    name: T0Groups
+    protect_from_deletion: false
+    description: "Default container for T0 Groups"
+    state: present
+  T0Servers:
+    name: T0Servers
+    protect_from_deletion: false
+    description: "Default container for T0 Server Objects"
+    state: present
+  T0Workstations:
+    name: T0Workstations
+    protect_from_deletion: false
+    description: "Default container for T0 Workstation Objects"
+    state: present
+tier1organizationalunits:
+  T1Admins:
+    name: T1Admins
+    protect_from_deletion: false
+    description: "Default container for T1 Admin Accounts"
+    state: present
+  T1Groups:
+    name: T1Groups
+    protect_from_deletion: false
+    description: "Default container for T1 Groups"
+    state: present
+  T1Servers:
+    name: T1Servers
+    protect_from_deletion: false
+    description: "Default container for T1 Server Objects"
+    state: present
+  T1Workstations:
+    name: T1Workstations
+    protect_from_deletion: false
+    description: "Default container for T1 Workstation Objects"
+    state: present
+tier2organizationalunits:
+  T2Admins:
+    name: T2Admins
+    protect_from_deletion: false
+    description: "Default container for T2 Admin Accounts"
+    state: present
+  T2Groups:
+    name: T2Groups
+    protect_from_deletion: false
+    description: "Default container for T2 Groups"
+    state: present
+  T2Printers:
+    name: T2Printers
+    protect_from_deletion: false
+    description: "Default container for T2 Printers"
+    state: present
+  T2Servers:
+    name: T2Servers
+    protect_from_deletion: false
+    description: "Default container for T2 Server Objects"
+    state: present
+  T2Users:
+    name: T2Users
+    protect_from_deletion: false
+    description: "Default container for T2 User Accounts"
+    state: present
+  T2Workstations:
+    name: T2Workstations
+    protect_from_deletion: false
+    description: "Default container for T2 Workstation Objects"
+    state: present
+
+# Tier0              OU=Tier0,DC=epsilon-inc,DC=dev | Complete
+# Tier1              OU=Tier1,DC=epsilon-inc,DC=dev | Complete
+# Tier2              OU=Tier2,DC=epsilon-inc,DC=dev | Complete
+# T0Admins           OU=T0Accounts,OU=Tier0,DC=epsilon-inc,DC=dev | Complete
+# T0Workstations     OU=T0Computers,OU=Tier0,DC=epsilon-inc,DC=dev
+# T0Groups           OU=T0Groups,OU=Tier0,DC=epsilon-inc,DC=dev | Complete
+# T1Admins           OU=T1Accounts,OU=Tier1,DC=epsilon-inc,DC=dev | Complete
+# T1Workstations     OU=T1Computers,OU=Tier1,DC=epsilon-inc,DC=dev
+# T1Groups           OU=T1Groups,OU=Tier1,DC=epsilon-inc,DC=dev | Complete
+# T2Admins           OU=T2Accounts,OU=Tier2,DC=epsilon-inc,DC=dev | Complete
+# T2Workstations     OU=T2Computers,OU=Tier2,DC=epsilon-inc,DC=dev
+# T2Groups           OU=T2Groups,OU=Tier2,DC=epsilon-inc,DC=dev | Complete
