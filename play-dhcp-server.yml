@@ -1,0 +1,66 @@
+---
+- name: Install and configure DHCP server
+  hosts: dhcp_servers
+  become: true
+
+  vars:
+    # Remote management through Tailscale
+    ansible_host: "100.122.133.51"
+
+    # Change this to your actual local NIC name
+    dhcp_interface: "enp0s3"
+
+    dhcp_domain_name: "lsalab.local"
+    dhcp_dns_servers:
+      - "8.8.8.8"
+      - "1.1.1.1"
+
+    dhcp_default_lease_time: 600
+    dhcp_max_lease_time: 7200
+
+    dhcp_subnets:
+      - subnet: "10.0.2.0"
+        netmask: "255.255.255.0"
+        range_start: "10.0.2.100"
+        range_end: "10.0.2.200"
+        routers: "10.0.2.2"
+        broadcast_address: "10.0.2.255"
+
+  tasks:
+    - name: Install ISC DHCP server
+      ansible.builtin.apt:
+        name: isc-dhcp-server
+        state: present
+        update_cache: true
+
+    - name: Configure DHCP listening interface
+      ansible.builtin.copy:
+        dest: /etc/default/isc-dhcp-server
+        content: |
+          INTERFACESv4="{{ dhcp_interface }}"
+          INTERFACESv6=""
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart DHCP service
+
+    - name: Deploy DHCP configuration
+      ansible.builtin.template:
+        src: dhcpd.conf.j2
+        dest: /etc/dhcp/dhcpd.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart DHCP service
+
+    - name: Ensure DHCP service is enabled and running
+      ansible.builtin.service:
+        name: isc-dhcp-server
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart DHCP service
+      ansible.builtin.service:
+        name: isc-dhcp-server
+        state: restarted
