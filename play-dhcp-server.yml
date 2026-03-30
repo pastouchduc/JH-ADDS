@@ -1,6 +1,6 @@
 ---
 - name: Install and configure DHCP server
-  hosts: dhcp_servers
+  hosts: dhcp_serversping
   become: true
 
   vars:

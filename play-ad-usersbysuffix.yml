@@ -1,0 +1,98 @@
+---
+- name: Create OUs and separate AD users by account suffix
+  hosts: domain_controllers
+  gather_facts: false
+
+  vars:
+    domain_dn: "DC=ruach,DC=local"
+    parent_users_ou: "OU=UsersGroup,DC=ruach,DC=local"
+
+    user_ou_map:
+      wa: "OU=WA,OU=UsersGroup,DC=ruach,DC=local"
+      da: "OU=DA,OU=UsersGroup,DC=ruach,DC=local"
+      sa: "OU=SA,OU=UsersGroup,DC=ruach,DC=local"
+      regular: "OU=Regular,OU=UsersGroup,DC=ruach,DC=local"
+
+  tasks:
+    - name: Ensure parent UsersGroup OU exists
+      microsoft.ad.ou:
+        name: "UsersGroup"
+        path: "{{ domain_dn }}"
+        state: present
+
+    - name: Ensure WA OU exists
+      microsoft.ad.ou:
+        name: "WA"
+        path: "{{ parent_users_ou }}"
+        state: present
+
+    - name: Ensure DA OU exists
+      microsoft.ad.ou:
+        name: "DA"
+        path: "{{ parent_users_ou }}"
+        state: present
+
+    - name: Ensure SA OU exists
+      microsoft.ad.ou:
+        name: "SA"
+        path: "{{ parent_users_ou }}"
+        state: present
+
+    - name: Ensure Regular OU exists
+      microsoft.ad.ou:
+        name: "Regular"
+        path: "{{ parent_users_ou }}"
+        state: present
+
+    - name: Get all users from Active Directory
+      ansible.windows.win_powershell:
+        script: |
+          Get-ADUser -Filter * -SearchBase "{{ domain_dn }}" -Properties DistinguishedName,sAMAccountName |
+          Select-Object DistinguishedName,sAMAccountName
+      register: ad_users_raw
+
+    - name: Parse returned AD users
+      ansible.builtin.set_fact:
+        ad_users: "{{ ad_users_raw.output }}"
+
+    - name: Move .wa users to WA OU
+      ansible.windows.win_powershell:
+        script: |
+          Move-ADObject -Identity "{{ item.DistinguishedName }}" -TargetPath "{{ user_ou_map.wa }}"
+      loop: "{{ ad_users if ad_users is iterable and ad_users is not string else [ad_users] }}"
+      when:
+        - item.sAMAccountName is defined
+        - item.sAMAccountName.endswith('.wa')
+        - "'OU=WA,OU=UsersGroup' not in item.DistinguishedName"
+
+    - name: Move .da users to DA OU
+      ansible.windows.win_powershell:
+        script: |
+          Move-ADObject -Identity "{{ item.DistinguishedName }}" -TargetPath "{{ user_ou_map.da }}"
+      loop: "{{ ad_users if ad_users is iterable and ad_users is not string else [ad_users] }}"
+      when:
+        - item.sAMAccountName is defined
+        - item.sAMAccountName.endswith('.da')
+        - "'OU=DA,OU=UsersGroup' not in item.DistinguishedName"
+
+    - name: Move .sa users to SA OU
+      ansible.windows.win_powershell:
+        script: |
+          Move-ADObject -Identity "{{ item.DistinguishedName }}" -TargetPath "{{ user_ou_map.sa }}"
+      loop: "{{ ad_users if ad_users is iterable and ad_users is not string else [ad_users] }}"
+      when:
+        - item.sAMAccountName is defined
+        - item.sAMAccountName.endswith('.sa')
+        - "'OU=SA,OU=UsersGroup' not in item.DistinguishedName"
+
+    - name: Move regular users to Regular OU
+      ansible.windows.win_powershell:
+        script: |
+          Move-ADObject -Identity "{{ item.DistinguishedName }}" -TargetPath "{{ user_ou_map.regular }}"
+      loop: "{{ ad_users if ad_users is iterable and ad_users is not string else [ad_users] }}"
+      when:
+        - item.sAMAccountName is defined
+        - not item.sAMAccountName.endswith('.wa')
+        - not item.sAMAccountName.endswith('.da')
+        - not item.sAMAccountName.endswith('.sa')
+        - "'OU=Regular,OU=UsersGroup' not in item.DistinguishedName"
