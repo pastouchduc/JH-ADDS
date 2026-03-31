@@ -1,0 +1,81 @@
+---
+- name: Configure DHCP server on Windows
+  hosts: dhcp_servers
+  gather_facts: false
+
+  vars:
+    dhcp_server_ip: "192.168.1.65"
+    scope_name: "RuachScope"
+    scope_subnet: "192.168.1.0"
+    subnet_mask: "255.255.255.0"
+    scope_start: "192.168.1.100"
+    scope_end: "192.168.1.200"
+    gateway: "192.168.1.1"
+    dns_domain: "ruach.local"
+    dns_servers:
+      - "192.168.1.65"
+      - "8.8.8.8"
+    lease_duration: "0.12:00:00"
+
+  tasks:
+    - name: Install DHCP role
+      ansible.windows.win_feature:
+        name: DHCP
+        state: present
+        include_management_tools: true
+
+    - name: Authorize DHCP server in Active Directory
+      ansible.windows.win_powershell:
+        script: |
+          $ServerName = $env:COMPUTERNAME
+          $DomainName = (Get-CimInstance Win32_ComputerSystem).Domain
+          $Fqdn = "$ServerName.$DomainName"
+          $IpAddress = "{{ dhcp_server_ip }}"
+
+          $existing = Get-DhcpServerInDC -ErrorAction SilentlyContinue | Where-Object {
+            $_.DnsName -eq $Fqdn -or $_.IPAddress -eq $IpAddress
+          }
+
+          if (-not $existing) {
+            Add-DhcpServerInDC -DnsName $Fqdn -IPAddress $IpAddress
+          }
+
+    - name: Ensure DHCP scope exists
+      ansible.windows.win_powershell:
+        script: |
+          $scope = Get-DhcpServerv4Scope -ErrorAction SilentlyContinue | Where-Object {
+            $_.ScopeId -eq "{{ scope_subnet }}"
+          }
+
+          if (-not $scope) {
+            Add-DhcpServerv4Scope `
+              -Name "{{ scope_name }}" `
+              -StartRange "{{ scope_start }}" `
+              -EndRange "{{ scope_end }}" `
+              -SubnetMask "{{ subnet_mask }}" `
+              -State Active
+          }
+
+    - name: Set DHCP scope options
+      ansible.windows.win_powershell:
+        script: |
+          $dnsServers = @({{ dns_servers | map('to_json') | join(', ') }})
+
+          Set-DhcpServerv4OptionValue `
+            -ScopeId "{{ scope_subnet }}" `
+            -DnsDomain "{{ dns_domain }}" `
+            -DnsServer $dnsServers `
+            -Router "{{ gateway }}"
+
+    - name: Set DHCP lease duration
+      ansible.windows.win_powershell:
+        script: |
+          Set-DhcpServerv4Scope `
+            -ScopeId "{{ scope_subnet }}" `
+            -LeaseDuration "{{ lease_duration }}"
+
+    - name: Ensure DHCP service is started
+      ansible.windows.win_service:
+        name: DHCPServer
+        start_mode: auto
+        state: started

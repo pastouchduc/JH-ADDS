@@ -1,0 +1,16 @@
+---
+dhcp_server_ip: "192.168.1.65"
+scope_name: "RuachScope"
+scope_subnet: "192.168.1.0"
+subnet_mask: "255.255.255.0"
+scope_start: "192.168.1.100"
+scope_end: "192.168.1.200"
+gateway: "192.168.1.1"
+dns_domain: "ruach.local"
+dns_servers:
+  - "192.168.1.65"
+  - "8.8.8.8"
+lease_duration: "0.12:00:00"
+
+dhcp_auth_user: "RUACH\\Administrator"
+dhcp_auth_password: "Emeraude1#"
