@@ -1,0 +1,137 @@
+---
+- name: Disable USB storage on Tier 2 workstations via GPO
+  hosts: domain_controllers
+  gather_facts: false
+
+  vars:
+    gpo_name: "T2 - Disable USB Storage"
+    domain_dn: "DC=hlab,DC=local"
+    tier2_workstations_ou: "OU=T2Workstations,OU=Tier2,DC=hlab,DC=local"
+
+    # Registry-backed policy paths
+    removable_storage_root: "HKLM\\Software\\Policies\\Microsoft\\Windows\\RemovableStorageDevices"
+    removable_disks_key: "HKLM\\Software\\Policies\\Microsoft\\Windows\\RemovableStorageDevices\\{53f5630d-b6bf-11d0-94f2-00a0c91efb8b}"
+
+  tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - gpo_name is defined
+          - tier2_workstations_ou is defined
+          - domain_dn is defined
+        fail_msg: "Missing one or more required variables."
+
+    - name: Ensure GroupPolicy module is available
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module GroupPolicy -ErrorAction Stop
+          "OK"
+
+    - name: Create GPO if it does not exist
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module GroupPolicy -ErrorAction Stop
+
+          $gpo = Get-GPO -Name "{{ gpo_name }}" -ErrorAction SilentlyContinue
+          if (-not $gpo) {
+            New-GPO -Name "{{ gpo_name }}" | Out-Null
+            Write-Output "CREATED"
+          } else {
+            Write-Output "EXISTS"
+          }
+      register: gpo_create_result
+
+    - name: Link GPO to Tier 2 workstation OU if not already linked
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module GroupPolicy -ErrorAction Stop
+
+          $gpoName = "{{ gpo_name }}"
+          $targetOU = "{{ tier2_workstations_ou }}"
+
+          $inheritance = Get-GPInheritance -Target $targetOU
+          $alreadyLinked = $false
+
+          foreach ($link in $inheritance.GpoLinks) {
+            if ($link.DisplayName -eq $gpoName) {
+              $alreadyLinked = $true
+            }
+          }
+
+          if (-not $alreadyLinked) {
+            New-GPLink -Name $gpoName -Target $targetOU -LinkEnabled Yes | Out-Null
+            Write-Output "LINKED"
+          } else {
+            Write-Output "ALREADY_LINKED"
+          }
+      register: gpo_link_result
+
+    - name: Enable All Removable Storage classes Deny all access
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module GroupPolicy -ErrorAction Stop
+
+          Set-GPRegistryValue `
+            -Name "{{ gpo_name }}" `
+            -Key "{{ removable_storage_root }}" `
+            -ValueName "Deny_All" `
+            -Type DWord `
+            -Value 1
+
+    - name: Deny read access to removable disks
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module GroupPolicy -ErrorAction Stop
+
+          Set-GPRegistryValue `
+            -Name "{{ gpo_name }}" `
+            -Key "{{ removable_disks_key }}" `
+            -ValueName "Deny_Read" `
+            -Type DWord `
+            -Value 1
+
+    - name: Deny write access to removable disks
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module GroupPolicy -ErrorAction Stop
+
+          Set-GPRegistryValue `
+            -Name "{{ gpo_name }}" `
+            -Key "{{ removable_disks_key }}" `
+            -ValueName "Deny_Write" `
+            -Type DWord `
+            -Value 1
+
+    - name: Deny execute access to removable disks
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module GroupPolicy -ErrorAction Stop
+
+          Set-GPRegistryValue `
+            -Name "{{ gpo_name }}" `
+            -Key "{{ removable_disks_key }}" `
+            -ValueName "Deny_Execute" `
+            -Type DWord `
+            -Value 1
+
+    - name: Force Group Policy update on Tier 2 workstations OU
+      ansible.windows.win_powershell:
+        script: |
+          Import-Module ActiveDirectory -ErrorAction Stop
+          $computers = Get-ADComputer -SearchBase "{{ tier2_workstations_ou }}" -LDAPFilter "(objectClass=computer)" | Select-Object -ExpandProperty Name
+          $computers | ConvertTo-Json -Depth 3
+      register: tier2_computers_raw
+
+    - name: Parse Tier 2 workstation list
+      ansible.builtin.set_fact:
+        tier2_computers: "{{ tier2_computers_raw.output }}"
+
+    - name: Trigger gpupdate remotely on Tier 2 workstations
+      ansible.windows.win_powershell:
+        script: |
+          Invoke-GPUpdate -Computer "{{ item }}" -Target Computer -RandomDelayInMinutes 0 -Force
+      loop: "{{ tier2_computers if tier2_computers is iterable and tier2_computers is not string else [tier2_computers] }}"
+      when:
+        - tier2_computers is defined
+        - tier2_computers | length > 0
+      ignore_errors: true
